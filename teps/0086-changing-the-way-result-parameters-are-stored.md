@@ -155,7 +155,7 @@ implementation.  The "Design Details" section below is for the real
 nitty-gritty.
 -->
 
-This proposal provides options for handling an extension to result parameter storage and potentially involves adjusting the `entrypoint` binary to write to this alternate implementation.
+This proposal provides options for handling a change to result parameter storage and potentially involves adjusting the `entrypoint` binary to write to this alternate implementation.
 
 We need to consider both performance and security impacts of the changes and trade off with the amount of capacity we would gain from the option.
 
@@ -172,7 +172,9 @@ This might be a good place to talk about core concepts and how they relate.
   - 1.5 MB CRD size
   - The total size of the PipelineRun _if_ it was to be patched back into an existing TaskRun object based on aggregate size of these objects.
 
-* 
+* Eventually this may result in running into a limit with etcd, however not a problem for now. Can be solved via cleanups / offloading history.
+
+* We want to try and minimize reimplementing access control in a webhook (in part because it means the webhook needs to know which task identities can update which task runs, which starts to get annoyingly stateful)
 
 ### Risks and Mitigations
 
@@ -187,6 +189,8 @@ How will UX be reviewed and by whom?
 
 Consider including folks that also work outside the WGs or subproject.
 -->
+
+* Concern on using etcd as a database
 
 ### User Experience (optional)
 
@@ -227,13 +231,30 @@ of the file, but general guidance is to include at least TEP number in the
 file name, for example, "/teps/images/NNNN-workflow.jpg".
 -->
 
-1. Configmaps: both N Configmaps (per TaskRun) and potentially per pipeline with Patch Merges (but i think there was concern on parallelism even with queued Patch Merges)
+1. N Configmaps: Per TaskRun or Per pipeline with Patch Merges (concern on parallelism even with queued Patch Merges)
 
-2. A dedicated HTTP Service
+  - Suppose hypothetically that the pipelines controller were to create N ConfigMaps** for each of N results, it could also grant the workload access to write to these results using one of these focused Roles: 
+    - https://github.com/tektoncd/pipeline/blob/9c61cdf6d4b7b5e26c787d62447c0eed1c92b68f/config/200-role.yaml#L100
+    - The ConfigMaps**, the Role, and the RoleBinding could all be OwnerRef'd to the *Run, to deal with cleanup.
+  - This will result in the pipelines controller being given more power, i.e. to create and delete roles and rolebindings
+    - Concern around having to create a new ConfigMap**, Role and RoleBinding per TaskRun, when at the end of the day we don't actually care about updating that ConfigMap**, but the TaskRun's results.
+  - This option won't 'scale fail' which would happen with self definition update when the definition itself starts to get too big in unrelated areas (aggregate limit).
 
-3. Self-update / mutate the TaskRun via admission controller (with the various controls i.e. first write, subsequent read only)
+2. CRD
 
-4. CRD / sub resource.
+  - Would limit the chance of editing with `kubectl edit cm <results>`
+  - Similar benefits to Configmap from a Role and Rolebinding perspective
+  - Webhook to validate the write once immutability
+
+3. A dedicated HTTP Service
+
+  - Potential Auth and HA problems
+  - Could run as part of the controller
+  - Could be a separate HTTP server(s) which write to TaskRuns (or even config maps); task pods connect to this server to submit results, this server records the results (means result size would be limited to what can be stored in the CRD but there probably needs to be an upper bound on result size anyway)
+
+4. Self-update / mutate the TaskRun via admission controller (with the various controls i.e. first write, subsequent read only)
+
+  - Potential issue with self updating its own Status
 
 
 ## Test Plan

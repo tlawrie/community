@@ -116,6 +116,8 @@ know that this has succeeded?
 * Allow larger storage than the current 4096 bytes of the Termination Message.
 * Allow users to reference a result parameter in its current form
 * Use existing objects (or standard ones incl CRDs) where the complexity _can_ be abstracted from a user.
+* _Potential_ for usage by CloudEvent payloads that can be stored as a result parameter and then use JSONPath on a result parameter to be able to target the contents.
+  - Do we add this as part of the scope? Not only change the storage but update the access method to build on top of **TEP-0080: Support domain-scoped parameter/result names** to allow access to the contents of result Parameter through JSONPath scoping?
 
 ### Non-Goals
 
@@ -124,7 +126,7 @@ What is out of scope for this TEP?  Listing non-goals helps to focus discussion
 and make progress.
 -->
 
-* Not attempting to solve the storage of blobs
+* Not attempting to solve the storage of blobs or large format files such as JARs
 
 ### Use Cases (optional)
 
@@ -136,6 +138,11 @@ Consider both the user's role (are they a Task author? Catalog Task user?
 Cluster Admin? etc...) and experience (what workflows or actions are enhanced
 if this problem is solved?).
 -->
+
+1. Provide Task authors and end users the ability to store larger result parameters such as JSON payloads from a HTTP call that they can inspect later or pass to other tasks
+
+2. The Tekton operator / cluster not needed to necessarily have a storage solution and to 
+
 
 ## Requirements
 
@@ -256,6 +263,9 @@ file name, for example, "/teps/images/NNNN-workflow.jpg".
 
   - Potential issue with self updating its own Status
 
+5. Separate Database
+
+  - Introducing an additional database requirement to Tekton to support the storage of information outside of etcd.
 
 ## Test Plan
 

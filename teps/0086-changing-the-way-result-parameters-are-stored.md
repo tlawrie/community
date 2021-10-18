@@ -89,7 +89,7 @@ tags, and then generate with `hack/update-toc.sh`.
 
 ## Summary
 
-To enhance the usage experience of result parameters by end users, we want to change the way result parameters are stored to allow for greater storage capacity yet with the current ease of reference and no specifical additional dependencies such as a storage mechansim.
+To enhance the usage experience of a [Tasks Results](https://tekton.dev/docs/pipelines/tasks/#emitting-results) by end users, we want to change the way Results are stored to allow for greater storage capacity yet with the current ease of [reference](https://tekton.dev/docs/pipelines/variables/#variables-available-in-a-pipeline) and no specific additional dependencies such as a storage mechanism.
 
 ## Motivation
 
@@ -102,9 +102,9 @@ demonstrate the interest in a TEP within the wider Tekton community.
 [experience reports]: https://github.com/golang/go/wiki/ExperienceReports
 -->
 
-The ability to improve result parameter storage size as part of a TaskRun without needing to have access to additional storage. 
+The ability to improve Task Result storage size as part of a TaskRun without needing to have access to additional storage. 
 
-Additionally this will help projects that wrap/abstract Tekton where users understand how to reference result parameters between tasks and dont have the ability to adjust a Task to retrieve from a storage path.
+Additionally this will help projects that wrap/abstract Tekton where users understand how to reference Task Results between tasks and dont have the ability to adjust a Task to retrieve from a storage path.
 
 ### Goals
 
@@ -114,10 +114,8 @@ know that this has succeeded?
 -->
 
 * Allow larger storage than the current 4096 bytes of the Termination Message.
-* Allow users to reference a result parameter in its current form
+* Allow users to reference a Task Result in its current form `$(tasks.Task Name.results.Result Name)`
 * Use existing objects (or standard ones incl CRDs) where the complexity _can_ be abstracted from a user.
-* _Potential_ for usage by CloudEvent payloads that can be stored as a result parameter and then use JSONPath on a result parameter to be able to target the contents.
-  - Do we add this as part of the scope? Not only change the storage but update the access method to build on top of **TEP-0080: Support domain-scoped parameter/result names** to allow access to the contents of result Parameter through JSONPath scoping?
 
 ### Non-Goals
 
@@ -139,10 +137,14 @@ Cluster Admin? etc...) and experience (what workflows or actions are enhanced
 if this problem is solved?).
 -->
 
-1. Provide Task authors and end users the ability to store larger result parameters such as JSON payloads from a HTTP call that they can inspect later or pass to other tasks
+1. Provide Task authors and end users the ability to store larger Results, such as JSON payloads from a HTTP call, that they can inspect later or pass to other tasks without the need to understand storage mechanisms.
 
-2. The Tekton operator / cluster not needed to necessarily have a storage solution and to 
+2. The Tekton operator / administrator not dependent on maintaining a storage solution and removing a complex barrier for some installations
 
+3. Store a CloudEvent payload as a Result for subsequent tasks to reference and process.
+
+4. _Potential_ Ability to use JSONPath on Results with JSON data to be able to reference specific elements in the contents.
+  - Do we add this as part of the scope? Not only change the storage but update the access method to build on top of **TEP-0080: Support domain-scoped parameter/result names** to allow access to the contents of Results through JSONPath scoping?
 
 ## Requirements
 
@@ -175,7 +177,7 @@ Go in to as much detail as necessary here.
 This might be a good place to talk about core concepts and how they relate.
 -->
 
-* The storage of the result parameter may still be limited by a number of scenarios, incl
+* The storage of the result parameter may still be limited by a number of scenarios, including:
   - 1.5 MB CRD size
   - The total size of the PipelineRun _if_ it was to be patched back into an existing TaskRun object based on aggregate size of these objects.
 
@@ -238,35 +240,6 @@ of the file, but general guidance is to include at least TEP number in the
 file name, for example, "/teps/images/NNNN-workflow.jpg".
 -->
 
-1. N Configmaps: Per TaskRun or Per pipeline with Patch Merges (concern on parallelism even with queued Patch Merges)
-
-  - Suppose hypothetically that the pipelines controller were to create N ConfigMaps** for each of N results, it could also grant the workload access to write to these results using one of these focused Roles: 
-    - https://github.com/tektoncd/pipeline/blob/9c61cdf6d4b7b5e26c787d62447c0eed1c92b68f/config/200-role.yaml#L100
-    - The ConfigMaps**, the Role, and the RoleBinding could all be OwnerRef'd to the *Run, to deal with cleanup.
-  - This will result in the pipelines controller being given more power, i.e. to create and delete roles and rolebindings
-    - Concern around having to create a new ConfigMap**, Role and RoleBinding per TaskRun, when at the end of the day we don't actually care about updating that ConfigMap**, but the TaskRun's results.
-  - This option won't 'scale fail' which would happen with self definition update when the definition itself starts to get too big in unrelated areas (aggregate limit).
-
-2. CRD
-
-  - Would limit the chance of editing with `kubectl edit cm <results>`
-  - Similar benefits to Configmap from a Role and Rolebinding perspective
-  - Webhook to validate the write once immutability
-
-3. A dedicated HTTP Service
-
-  - Potential Auth and HA problems
-  - Could run as part of the controller
-  - Could be a separate HTTP server(s) which write to TaskRuns (or even config maps); task pods connect to this server to submit results, this server records the results (means result size would be limited to what can be stored in the CRD but there probably needs to be an upper bound on result size anyway)
-
-4. Self-update / mutate the TaskRun via admission controller (with the various controls i.e. first write, subsequent read only)
-
-  - Potential issue with self updating its own Status
-
-5. Separate Database
-
-  - Introducing an additional database requirement to Tekton to support the storage of information outside of etcd.
-
 ## Test Plan
 
 <!--
@@ -304,10 +277,41 @@ not need to be as detailed as the proposal, but should include enough
 information to express the idea and why it was not acceptable.
 -->
 
-There is the current alternative of storing result parameters as data in a workspace, however Workspaces
-- require there has to be a storage mechanism in the cluster that can be shared between Tasks. That can be complex, or have performance issues in itself if using an As A Service that orders the storage at spin-up time. Or forces Tasks to all run on the same node. etc. Storage is a big complex adoption hurdle.
-- changes the way end users refer to the result parameter or pass between containers
-- requires some tasks to be altered to retrieve data from the file system in a certain location. This makes it difficult to use a library of Tekton Tasks or an abstraction that doesn't provide access to where a parameter comes from.
+1. N Configmaps: Per TaskRun or Per pipeline with Patch Merges (concern on parallelism even with queued Patch Merges)
+
+  - Suppose hypothetically that the pipelines controller were to create N ConfigMaps** for each of N results, it could also grant the workload access to write to these results using one of these focused Roles: 
+    - https://github.com/tektoncd/pipeline/blob/9c61cdf6d4b7b5e26c787d62447c0eed1c92b68f/config/200-role.yaml#L100
+    - The ConfigMaps**, the Role, and the RoleBinding could all be OwnerRef'd to the *Run, to deal with cleanup.
+  - This will result in the pipelines controller being given more power, i.e. to create and delete roles and rolebindings
+    - Concern around having to create a new ConfigMap**, Role and RoleBinding per TaskRun, when at the end of the day we don't actually care about updating that ConfigMap**, but the TaskRun's results.
+  - This option won't 'scale fail' which would happen with self definition update when the definition itself starts to get too big in unrelated areas (aggregate limit).
+
+2. CRD
+
+  - Would limit the chance of editing with `kubectl edit cm <results>`
+  - Similar benefits to Configmap from a Role and Rolebinding perspective
+  - Webhook to validate the write once immutability
+
+3. A dedicated HTTP Service
+
+  - Potential Auth and HA problems
+  - Could run as part of the controller
+  - Could be a separate HTTP server(s) which write to TaskRuns (or even config maps); task pods connect to this server to submit results, this server records the results (means result size would be limited to what can be stored in the CRD but there probably needs to be an upper bound on result size anyway)
+
+4. Self-update / mutate the TaskRun via admission controller (with the various controls i.e. first write, subsequent read only)
+
+  - Potential issue with self updating its own Status
+
+5. Separate Database
+
+  - Introducing an additional database requirement to Tekton to support the storage of information outside of etcd.
+
+6. No change. Use workspaces.
+
+  - There is the alternative of storing result parameters as data in a workspace, however Workspaces
+    - require there has to be a storage mechanism in the cluster that can be shared between Tasks. That can be complex, or have performance issues in itself if using an As A Service that orders the storage at spin-up time. Or forces Tasks to all run on the same node. etc. Storage is a big complex adoption hurdle.
+    - changes the way end users refer to the result parameter or pass between containers
+    - requires some tasks to be altered to retrieve data from the file system in a certain location. This makes it difficult to use a library of Tekton Tasks or an abstraction that doesn't provide access to where a parameter comes from.
 
 ## Infrastructure Needed (optional)
 

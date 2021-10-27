@@ -329,7 +329,11 @@ migration strategy. This is especially useful when we modify a
 behavior or add a feature that may replace and deprecate a current one.
 -->
 
-TBD. Potentially feature flag depending on the object used and security role changes.
+TBD. 
+
+- Potentially feature flag depending on the object used and security role changes.
+- Stored Results in current state are available via TaskRun and PipelineRun status, which is part of the Tekton API. We should try and keep that interface even for storage of larger results. If not directly available, perhaps replacing the result text itself with a link to where the result can be obtained from.
+- Tekton can send CloudEvents and those events today include results. This mechanism is used in our dogfoding to send data to pipelines that are triggered asynchronously through events. I think this is a good use case, and we should allow for it to be possible regardless of the size and type of results that we support, with the caveat that larger results would not be directly in the status, only a link to them.
 
 ## Implementation Pull request(s)
 

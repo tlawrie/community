@@ -5,6 +5,7 @@ creation-date: '2021-09-27'
 last-updated: '2021-09-27'
 authors:
 - '@tlawrie'
+- '@imjasonh'
 ---
 
 # TEP-0086: Changing the way result parameters are stored

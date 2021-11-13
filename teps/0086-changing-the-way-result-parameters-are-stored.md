@@ -394,6 +394,16 @@ information to express the idea and why it was not acceptable.
     - changes the way end users refer to the result parameter or pass between containers
     - requires some tasks to be altered to retrieve data from the file system in a certain location. This makes it difficult to use a library of Tekton Tasks or an abstraction that doesn't provide access to where a parameter comes from.
 
+### Repurpose Artifact Storage API
+
+  - Already supported by Tekton Pipelines for `PipelineResources`
+  - Supports buckets and temporary PVCs
+  - Only requires a one-time configuration by operators
+  - Transparently moves data between tasks in a pipeline
+  - Currently tightly coupled with `OutputResources` and `InputResources` but this could evolve
+  - [Docs on setting up storage](https://github.com/tektoncd/pipeline/blob/main/docs/install.md#configuring-pipelineresource-storage)
+  - [Interface](https://github.com/tektoncd/pipeline/blob/main/pkg/artifacts/artifacts_storage.go#L39-L47)
+
 ### Use stdout logs from a dedicated sidecar to return a json result object
   
   - The controller would wait for the sidecar to exit and then read the logs based on a particular query and append info to the TaskRun

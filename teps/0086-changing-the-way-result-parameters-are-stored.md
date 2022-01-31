@@ -107,7 +107,7 @@ demonstrate the interest in a TEP within the wider Tekton community.
 
 The ability to improve Task Result storage size as part of a TaskRun without needing to have access to additional storage. 
 
-Additionally this will help projects that wrap/abstract Tekton where users understand how to reference Task Results between tasks and dont have the ability to adjust a Task to retrieve from a storage path.
+Additionally this will help projects that wrap/abstract Tekton where users understand how to reference Task Results between tasks and dont have the ability to adjust a Task to retrieve from a storage path. Part of the motivation for me putting this TEP together is around making that easier. With my [project](https://github.com/boomerang-io) end users run tasks without knowing YAML, they drag and drop tasks on a GUI.
 
 ### Goals
 
@@ -152,6 +152,10 @@ if this problem is solved?).
   - Do we add this as part of the scope? Not only change the storage but update the access method to build on top of **TEP-0080: Support domain-scoped parameter/result names** to allow access to the contents of Results through JSONPath scoping?
 
 5. For projects wrapping or extending Tekton, such as with [Boomerang Flow](https://useboomerang.io) the end users may not know about adjusting Tasks to work with Workspaces. In this instance, they drag and drop tasks on a no-code UI and can only pass parameters around. Additional other extensions may also not know or understand storage systems.
+
+6. emit structured results, e.g. multiple built image results from a task (see https://github.com/tektoncd/pipeline/issues/4282 for a relevant release pipeline failure, and [TEP-0075](https://github.com/tektoncd/pipeline/issues/4282) and [TEP-0076](https://github.com/tektoncd/community/pull/477) for structured result support) <-- or this could just be part of item (1)
+
+7. The ability to emit [SBOMs](https://en.wikipedia.org/wiki/Software_bill_of_materials) as results from Tasks and make them easily consumable by tools observing execution (e.g. Tekton Chains) without requiring those tools to mount and access volumes
 
 ## Requirements
 

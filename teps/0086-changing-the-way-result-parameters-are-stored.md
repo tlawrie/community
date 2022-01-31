@@ -251,6 +251,50 @@ of the file, but general guidance is to include at least TEP number in the
 file name, for example, "/teps/images/NNNN-workflow.jpg".
 -->
 
+Solution TBD. Primary consideration is the **Result Sidecar** implementation.
+
+### Open Design Questions
+
+- Should the sidecar be responsible for deciding whether the result should be reported by-value or by-reference? Or is that a controller-wide configuration? Passing by-value is still useful for small pieces of data to be able to have them inlined in TaskRun/PipelineRun statuses.
+- How should the sidecar report that results-writing or param-getting failed, and how should the TaskRun controller be notified so that the TaskRun can also be failed?
+
+## Test Plan
+
+<!--
+**Note:** *Not required until targeted at a release.*
+
+Consider the following in developing a test plan for this enhancement:
+- Will there be e2e and integration tests, in addition to unit tests?
+- How will it be tested in isolation vs with other components?
+
+No need to outline all of the test cases, just the general strategy.  Anything
+that would count as tricky in the implementation and anything particularly
+challenging to test should be called out.
+
+All code is expected to have adequate tests (eventually with coverage
+expectations).
+-->
+
+## Design Evaluation
+<!--
+How does this proposal affect the reusability, simplicity, flexibility 
+and conformance of Tekton, as described in [design principles](https://github.com/tektoncd/community/blob/master/design-principles.md)
+-->
+
+## Drawbacks
+
+<!--
+Why should this TEP _not_ be implemented?
+-->
+
+## Alternatives
+
+<!--
+What other approaches did you consider and why did you rule them out?  These do
+not need to be as detailed as the proposal, but should include enough
+information to express the idea and why it was not acceptable.
+-->
+
 ### Result References
 
 Beyond size limits of specific TaskRuns’ results, the fundamental issue is that API objects in etcd are not suitable for storing as much data as users want to be able to report in results, and pass as parameters.
@@ -309,48 +353,6 @@ Implementations should take care to ensure the integrity of result/param content
 - ideally, incremental for speed and cost efficiency
 - ideally, with tight access controls to prevent tampering and leakage
 for example, an implementation that stored contents in GCS could use signed URLs to only authorize one POST of object contents, only authorize GETs for only one hour, and delete the object contents entirely after one day.
-
-### Open Design Questions
-
-- Should the sidecar be responsible for deciding whether the result should be reported by-value or by-reference? Or is that a controller-wide configuration? Passing by-value is still useful for small pieces of data to be able to have them inlined in TaskRun/PipelineRun statuses.
-- How should the sidecar report that results-writing or param-getting failed, and how should the TaskRun controller be notified so that the TaskRun can also be failed?
-
-## Test Plan
-
-<!--
-**Note:** *Not required until targeted at a release.*
-
-Consider the following in developing a test plan for this enhancement:
-- Will there be e2e and integration tests, in addition to unit tests?
-- How will it be tested in isolation vs with other components?
-
-No need to outline all of the test cases, just the general strategy.  Anything
-that would count as tricky in the implementation and anything particularly
-challenging to test should be called out.
-
-All code is expected to have adequate tests (eventually with coverage
-expectations).
--->
-
-## Design Evaluation
-<!--
-How does this proposal affect the reusability, simplicity, flexibility 
-and conformance of Tekton, as described in [design principles](https://github.com/tektoncd/community/blob/master/design-principles.md)
--->
-
-## Drawbacks
-
-<!--
-Why should this TEP _not_ be implemented?
--->
-
-## Alternatives
-
-<!--
-What other approaches did you consider and why did you rule them out?  These do
-not need to be as detailed as the proposal, but should include enough
-information to express the idea and why it was not acceptable.
--->
 
 ### N Configmaps Per TaskRun with Patch Merges (c). 
 

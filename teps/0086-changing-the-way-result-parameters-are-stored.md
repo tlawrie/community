@@ -223,7 +223,7 @@ via CLI, dashboard or a monitoring system.
 Consider including folks that also work on CLI and dashboard.
 -->
 
-* Users must be able to refer to these result parameters exactly as they would know and still be able to reference in subsequent tasks (i.e. read access)
+* Users must be able to refer to these result parameters exactly as they currently do and still be able to reference in subsequent tasks (i.e. read access)
 
 ### Performance (optional)
 
@@ -251,10 +251,17 @@ of the file, but general guidance is to include at least TEP number in the
 file name, for example, "/teps/images/NNNN-workflow.jpg".
 -->
 
-Solution TBD. Primary consideration is the **Result Sidecar** implementation.
+Solution TBD. Primary consideration is the **Result Sidecar** implementation coupled with the **Dedicated HTTP Service**. 
+
+Overall we by using a plug-and-play extensible design, the question of what the storage mechanism is becomes less of an implementation design choice. Instead the questions now become
+
+1. What is the default storage mechanism shipped? We want to provide a mechanism that does not require storage or additional dependencies. Configmaps is the ideal choice here, even if it creates additional ServiceAccount changes as when it comes time to production, these can be tightened as well as an alternative Results backing mechansim chosen.
+
+2. Are we wanting a centralized or distributed design? If we combine the Result Sidecar with the Dedicated HTTP Service we potentially get the best of both worlds. A centralized controller for security and extensibility. With a sidecar of reading and processing the results.
 
 ### Open Design Questions
 
+- Do we need the extra byRef boolean in the model?
 - Should the sidecar be responsible for deciding whether the result should be reported by-value or by-reference? Or is that a controller-wide configuration? Passing by-value is still useful for small pieces of data to be able to have them inlined in TaskRun/PipelineRun statuses.
 - How should the sidecar report that results-writing or param-getting failed, and how should the TaskRun controller be notified so that the TaskRun can also be failed?
 
